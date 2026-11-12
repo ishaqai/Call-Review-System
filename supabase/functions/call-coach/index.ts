@@ -26,9 +26,9 @@ Deno.serve(async (request) => {
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
-  const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
-  if (!supabaseUrl || !supabaseAnonKey || !geminiApiKey) {
-    return json({ error: "The coaching function needs Supabase and Gemini secrets configured." }, 500);
+  const anthropicApiKey = Deno.env.get("ANTHROPIC_API_KEY");
+  if (!supabaseUrl || !supabaseAnonKey || !anthropicApiKey) {
+    return json({ error: "The coaching function needs Supabase and Anthropic secrets configured." }, 500);
   }
 
   const userClient = createClient(supabaseUrl, supabaseAnonKey, {
@@ -84,28 +84,33 @@ Deno.serve(async (request) => {
     ? `Organize the user's rough call notes without adding facts. Preserve uncertainty and meaning; do not infer a conclusion. Return JSON with summary (string), call_purpose (string), conclusion (string), feedback (string), follow_up_steps (string array). Rough notes: ${String(body.notes || "").slice(0, 10000)}`
     : `Coach the user on this call, focusing on ${focus}, using only the saved notes. Be specific and supportive; do not infer things the notes do not support. Return JSON with keys summary (string), strengths (string array), improvement_areas (string array), suggested_phrasing (string array), follow_up_steps (string array). Record: ${JSON.stringify(record).slice(0, 12000)}`;
 
-  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${encodeURIComponent(geminiApiKey)}`;
-  const geminiRequest = {
+  const anthropicRequest = {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": anthropicApiKey,
+      "anthropic-version": "2023-06-01",
+    },
     body: JSON.stringify({
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: { responseMimeType: "application/json", temperature: 0.3 },
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 1800,
+      system: "You are a practical call-coaching assistant. Follow the user's task, ground your advice in the supplied records, and return only a valid JSON object matching the requested keys.",
+      messages: [{ role: "user", content: prompt }],
     }),
   };
-  let geminiResponse = await fetch(geminiUrl, geminiRequest);
+  let anthropicResponse = await fetch("https://api.anthropic.com/v1/messages", anthropicRequest);
   for (const waitMs of [700, 1600]) {
-    if (geminiResponse.status !== 429 && geminiResponse.status !== 503) break;
+    if (![429, 500, 529].includes(anthropicResponse.status)) break;
     await new Promise((resolve) => setTimeout(resolve, waitMs));
-    geminiResponse = await fetch(geminiUrl, geminiRequest);
+    anthropicResponse = await fetch("https://api.anthropic.com/v1/messages", anthropicRequest);
   }
-  if (!geminiResponse.ok) {
-    const details = await geminiResponse.text();
-    console.error("Gemini request failed", geminiResponse.status, details);
-    return json({ error: "Gemini could not generate the review. Check the API key and Gemini API access." }, 502);
+  if (!anthropicResponse.ok) {
+    const details = await anthropicResponse.text();
+    console.error("Anthropic request failed", anthropicResponse.status, details);
+    return json({ error: "The assistant could not generate the review. Check the Anthropic API key and account access." }, 502);
   }
-  const responseData = await geminiResponse.json();
-  const text = responseData.candidates?.[0]?.content?.parts?.map((part: { text?: string }) => part.text || "").join("");
-  if (!text) return json({ error: "Gemini returned an empty review. Try again." }, 502);
-  try { return json(JSON.parse(text)); } catch { return json({ error: "Gemini returned an unreadable response. Try again." }, 502); }
+  const responseData = await anthropicResponse.json();
+  const text = responseData.content?.filter((block: { type?: string }) => block.type === "text").map((block: { text?: string }) => block.text || "").join("");
+  if (!text) return json({ error: "The assistant returned an empty review. Try again." }, 502);
+  try { return json(JSON.parse(text)); } catch { return json({ error: "The assistant returned an unreadable response. Try again." }, 502); }
 });

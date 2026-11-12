@@ -22,7 +22,7 @@ The AI workspace provides:
 - Rough-note cleanup that creates a draft for review before applying it to the call form.
 - Weekly recaps of saved calls from the current week.
 
-AI requests require sign-in and use the Supabase Edge Function at `supabase/functions/call-coach/index.ts`. Before submitting a request, the app explains what may be sent to Google Gemini. For saved call analysis, you can omit contact, owner, recruiter, and lead ID fields. Review AI output before using it.
+AI requests require sign-in and use the Supabase Edge Function at `supabase/functions/call-coach/index.ts`, which calls Anthropic's Claude Haiku 4.5 API. Before submitting a request, the app explains what information may be sent to Anthropic. For saved call analysis, you can omit contact, owner, recruiter, and lead ID fields. Review AI output before using it.
 
 ## Local use and cloud sync
 
@@ -41,7 +41,7 @@ The `call_records` table uses row-level security so authenticated users can acce
 
 ### Deploying AI changes
 
-Keep `GEMINI_API_KEY` in Supabase Edge Function secrets. A local `.env` file is ignored by Git and is not automatically available to a deployed function. From this directory, after installing and authenticating the Supabase CLI, deploy with:
+Keep `ANTHROPIC_API_KEY` in Supabase Edge Function secrets. The Edge Function uses model ID `claude-haiku-4-5-20251001`. Put the key in the ignored `.env` file using the name `ANTHROPIC_API_KEY`; the file is not automatically available to a deployed function. From this directory, after installing and authenticating the Supabase CLI, deploy with:
 
 ```sh
 supabase secrets set --env-file .env --project-ref zvcumwgsrgxnzmlclpem
