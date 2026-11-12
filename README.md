@@ -1,3 +1,6 @@
+# Call-Review-System
+This repository is going to hold all records of my calls and get an insight of my calls like how it went with different clients.
+
 # Call Review System
 
 A lightweight, private call-recording interface for tracking leads, conversations, outcomes, conclusions, feedback, ratings, and follow-ups.
