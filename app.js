@@ -8,6 +8,7 @@ let selectedRating = 0;
 const supabase = window.supabase?.createClient(window.SUPABASE_URL, window.SUPABASE_PUBLISHABLE_KEY);
 let currentUser = null;
 let cloudReady = false;
+let authBusy = false;
 
 const $ = id => document.getElementById(id);
 const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
@@ -20,21 +21,22 @@ async function syncCurrentRecords(){
   if(!currentUser||!cloudReady)return;
   setCloudStatus('Syncing records…');
   const {data,error}=await supabase.from('call_records').select('id,record').eq('user_id',currentUser.id);
-  if(error){setCloudStatus('Cloud database setup needed','error');console.error(error);return}
+  if(error){setCloudStatus('Signed in · cloud records could not load','error');console.error(error);return false}
   const cloudRows=data||[], cloudIds=new Set(cloudRows.map(row=>row.id));
   const localOnly=records.filter(record=>!cloudIds.has(record.id));
-  if(localOnly.length){const {error:uploadError}=await supabase.from('call_records').upsert(localOnly.map(record=>({id:record.id,user_id:currentUser.id,record})),{onConflict:'id'});if(uploadError){setCloudStatus('Could not upload local records','error');console.error(uploadError);return}}
+  if(localOnly.length){const {error:uploadError}=await supabase.from('call_records').upsert(localOnly.map(record=>({id:record.id,user_id:currentUser.id,record})),{onConflict:'id'});if(uploadError){setCloudStatus('Signed in · local records could not upload','error');console.error(uploadError);return false}}
   const {data:latest,error:loadError}=await supabase.from('call_records').select('id,record').eq('user_id',currentUser.id);
-  if(loadError){setCloudStatus('Could not load cloud records','error');console.error(loadError);return}
-  records=(latest||[]).map(row=>row.record);persist();setCloudStatus(`Synced to cloud · ${records.length} records`,'online');
+  if(loadError){setCloudStatus('Signed in · cloud records could not load','error');console.error(loadError);return false}
+  records=(latest||[]).map(row=>row.record);persist();setCloudStatus(`Synced to cloud · ${records.length} records`,'online');return true;
 }
 async function initCloud(){
-  if(!supabase){setCloudStatus('Cloud library unavailable','error');return}
+  if(!supabase){setCloudStatus('Cloud library unavailable','error');showAuthMessage('Cloud sign-in could not start. Reload the page.');return}
   $('authCard').hidden=false;
-  const {data:{session},error}=await supabase.auth.getSession();
-  if(error){setCloudStatus('Could not check sign-in','error');return}
-  if(session){currentUser=session.user;cloudReady=true;$('authCard').hidden=true;await syncCurrentRecords()}else setCloudStatus('Sign in to enable cloud sync');
-  supabase.auth.onAuthStateChange((_event,nextSession)=>{setTimeout(async()=>{currentUser=nextSession?.user||null;cloudReady=Boolean(currentUser);$('authCard').hidden=Boolean(currentUser);if(currentUser)await syncCurrentRecords();else{setCloudStatus('Signed out · showing this browser’s records');records=loadRecords();render()}},0)});
+  try{const {data:{session},error}=await supabase.auth.getSession();
+    if(error)throw error;
+    if(session){currentUser=session.user;cloudReady=true;$('authCard').hidden=true;await syncCurrentRecords()}else{currentUser=null;cloudReady=false;setCloudStatus('Sign in to enable cloud sync')}
+    supabase.auth.onAuthStateChange((_event,nextSession)=>{setTimeout(async()=>{currentUser=nextSession?.user||null;cloudReady=Boolean(currentUser);if(currentUser){$('authCard').hidden=true;showAuthMessage('Signed in. Loading your cloud records…');await syncCurrentRecords();showAuthMessage('')}else{$('authCard').hidden=false;setCloudStatus('Signed out · showing this browser’s records');records=loadRecords();render()}},0)});
+  }catch(error){currentUser=null;cloudReady=false;$('authCard').hidden=false;setCloudStatus('Could not check sign-in','error');showAuthMessage(error.message||'Could not connect to Supabase. Try again.')}
 }
 function render(){
   const query = $('searchInput').value.toLowerCase().trim(), filter = $('outcomeFilter').value, sort = $('sortSelect').value;
@@ -75,6 +77,6 @@ $('newRecordButton').addEventListener('click',()=>{resetForm();location.hash='ne
 $('exportButton').addEventListener('click',()=>{const blob=new Blob([JSON.stringify(records,null,2)],{type:'application/json'}), url=URL.createObjectURL(blob), link=document.createElement('a'); link.href=url;link.download=`call-records-${new Date().toISOString().slice(0,10)}.json`;link.click();URL.revokeObjectURL(url)});
 $('importInput').addEventListener('change',async event=>{const file=event.target.files[0];if(!file)return;try{const incoming=JSON.parse(await file.text());if(!Array.isArray(incoming))throw Error();const existing=new Map(records.map(r=>[r.id,r]));for(const item of incoming){const record={...item,id:item.id||crypto.randomUUID()};existing.set(record.id,record)}records=[...existing.values()];persist();if(currentUser)await syncCurrentRecords();alert(`Imported ${incoming.length} records.`)}catch{alert('That file is not a valid call-record export.')}event.target.value=''});
 $('clearAllButton').addEventListener('click',async()=>{if(records.length && confirm('Delete all call records? This cannot be undone unless you exported a backup.')){const ids=records.map(r=>r.id);records=[];persist();if(currentUser){const {error}=await supabase.from('call_records').delete().eq('user_id',currentUser.id).in('id',ids);if(error)setCloudStatus('Cloud deletion failed','error')}}});
-$('authForm').addEventListener('submit',async event=>{event.preventDefault();if(!supabase){showAuthMessage('Supabase did not load. Refresh and try again.');return}showAuthMessage('Signing in…');const {error}=await supabase.auth.signInWithPassword({email:$('authEmail').value.trim(),password:$('authPassword').value});showAuthMessage(error?.message||'Signed in')});
+$('authForm').addEventListener('submit',async event=>{event.preventDefault();if(authBusy)return;if(!supabase){showAuthMessage('Supabase did not load. Reload the page and try again.');return}const button=$('signInButton');authBusy=true;button.disabled=true;showAuthMessage('Signing in…');try{const {data,error}=await supabase.auth.signInWithPassword({email:$('authEmail').value.trim(),password:$('authPassword').value});if(error)throw error;if(!data.session)throw new Error('Supabase did not return a session. Check whether email confirmation is enabled.');currentUser=data.user;cloudReady=true;showAuthMessage('Signed in. Loading records…');$('authCard').hidden=true;await syncCurrentRecords();if(!cloudReady)$('authCard').hidden=false;showAuthMessage('')}catch(error){currentUser=null;cloudReady=false;$('authCard').hidden=false;setCloudStatus('Sign-in failed','error');showAuthMessage(error.message||'Could not sign in. Check your connection and try again.')}finally{authBusy=false;button.disabled=false}});
 resetForm();render();initCloud();
 }
