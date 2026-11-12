@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="refinements.css">
   <link rel="stylesheet" href="useful-ui.css">
   <link rel="stylesheet" href="ai-coach.css">
+  <link rel="stylesheet" href="product-upgrades.css">
 </head>
 <body>
   <div class="app-shell">
@@ -22,7 +23,8 @@
 
     <main class="main-content">
       <header class="topbar"><div><p class="eyebrow">YOUR CALL WORKSPACE</p><h1>Conversations, clearly reviewed.</h1><p class="muted">Track outcomes, capture feedback, and stay on top of every next step.</p></div><div class="topbar-actions"><div class="sync-indicator"><span class="sync-light"></span><span id="cloudStatus" class="cloud-status">Checking cloud connection…</span></div><button class="primary-button" id="newRecordButton">＋ Add a call</button></div></header>
-      <section class="auth-card" id="authCard"><div class="auth-copy"><span class="auth-icon">↗</span><div><strong>Sign in to your workspace</strong><p>Access and sync your private call records across devices.</p></div></div><form id="authForm"><input type="email" id="authEmail" autocomplete="email" required placeholder="Email address"><input type="password" id="authPassword" autocomplete="current-password" required placeholder="Password"><button class="secondary-button" id="signInButton" type="submit">Sign in</button><span class="auth-message" id="authMessage" role="status" aria-live="polite"></span></form></section>
+      <section class="auth-card" id="authCard"><div class="auth-copy"><span class="auth-icon">↗</span><div><strong>Sign in to your workspace</strong><p>Access and sync your private call records across devices.</p></div></div><form id="authForm"><input type="email" id="authEmail" autocomplete="email" required placeholder="Email address"><input type="password" id="authPassword" autocomplete="current-password" required placeholder="Password"><button class="secondary-button" id="signInButton" type="submit">Sign in</button><button class="text-button" id="resetPasswordButton" type="button">Forgot password?</button><span class="auth-message" id="authMessage" role="status" aria-live="polite"></span></form></section>
+      <div class="account-bar" id="accountBar" hidden><span id="signedInEmail"></span><button class="text-button" id="signOutButton">Sign out</button></div>
 
       <section id="dashboard" class="stats-grid" aria-label="Summary">
         <button class="stat-card stat-button" data-quick-filter="all"><span class="stat-label">Total calls</span><strong id="totalCalls">0</strong><span class="stat-detail">View all conversations <b>↗</b></span></button>
@@ -32,11 +34,12 @@
       </section>
 
       <section class="insights-strip" aria-label="Call outcome breakdown"><div class="insights-heading"><div><p class="eyebrow">AT A GLANCE</p><h2>Outcome breakdown</h2></div><span id="periodCallCount">0 calls</span></div><div class="outcome-meter" aria-label="Outcome proportions"><span class="meter-positive" id="positiveMeter"></span><span class="meter-neutral" id="neutralMeter"></span><span class="meter-negative" id="negativeMeter"></span></div><div class="outcome-legend"><span><i class="legend-dot positive-dot"></i>Positive <b id="positiveBreakdown">0</b></span><span><i class="legend-dot neutral-dot"></i>Neutral <b id="neutralBreakdown">0</b></span><span><i class="legend-dot negative-dot"></i>Needs work <b id="negativeBreakdown">0</b></span></div></section>
+      <section class="trend-card"><div class="trend-heading"><div><p class="eyebrow">YOUR PROGRESS</p><h2>Calls by month</h2></div><span>Recent 6 months</span></div><div id="monthlyTrend" class="monthly-trend"></div></section>
 
       <section id="records" class="content-card">
-        <div class="section-heading"><div><p class="eyebrow">YOUR LOG</p><h2>Recent call records</h2></div><div class="actions"><button class="secondary-button" id="historyCoachButton">✦ Review my patterns</button><button class="secondary-button" id="exportButton">Export JSON</button><label class="secondary-button file-button">Import JSON<input type="file" id="importInput" accept="application/json"></label></div></div>
-        <div class="toolbar"><label class="search-box"><span>⌕</span><input id="searchInput" type="search" placeholder="Search people, companies, notes…"></label><select id="outcomeFilter"><option value="all">All outcomes</option><option value="positive">Positive</option><option value="neutral">Neutral</option><option value="negative">Needs work</option></select><label class="date-filter"><span>From</span><input id="dateFrom" type="date" aria-label="Filter from date"></label><label class="date-filter"><span>To</span><input id="dateTo" type="date" aria-label="Filter to date"></label><select id="sortSelect"><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="rating">Highest rating</option></select></div>
-        <div id="recordsList" class="records-list"></div>
+        <div class="section-heading"><div><p class="eyebrow">YOUR LOG</p><h2>Recent call records</h2></div><div class="actions"><button class="secondary-button" id="historyCoachButton">✦ Review my patterns</button><button class="secondary-button" id="csvExportButton">Export CSV</button><button class="secondary-button" id="exportButton">Export JSON</button><label class="secondary-button file-button">Import JSON<input type="file" id="importInput" accept="application/json"></label></div></div>
+        <div class="toolbar"><label class="search-box"><span>⌕</span><input id="searchInput" type="search" placeholder="Search people, companies, notes…"></label><select id="outcomeFilter"><option value="all">All outcomes</option><option value="positive">Positive</option><option value="neutral">Neutral</option><option value="negative">Needs work</option></select><select id="stageFilter"><option value="all">All stages</option><option>HR Interview</option><option>Technical Interview</option><option>Hiring Manager Interview</option><option>Client Interview</option></select><select id="sourceFilter"><option value="all">All sources</option><option>LinkedIn</option><option>Referral</option><option>Website</option><option>Recruiter</option><option>Other</option></select><label class="date-filter"><span>From</span><input id="dateFrom" type="date" aria-label="Filter from date"></label><label class="date-filter"><span>To</span><input id="dateTo" type="date" aria-label="Filter to date"></label><select id="sortSelect"><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="rating">Highest rating</option></select></div>
+        <div id="recordsList" class="records-list"></div><div class="pagination"><span id="pageSummary">0 records</span><div><button class="secondary-button" id="prevPage">Previous</button><button class="secondary-button" id="nextPage">Next</button></div></div>
       </section>
 
       <section id="new-record" class="content-card form-card">
@@ -45,6 +48,7 @@
           <input type="hidden" id="recordId">
           <p class="form-subheading">Lead details</p>
           <div class="form-grid"><label>Lead ID<input id="leadId" placeholder="e.g. 430770"></label><label>Company name<input id="company" placeholder="e.g. Aster Ocean"></label><label>Job title<input id="jobTitle" placeholder="e.g. Data Architect"></label><label>Lead source<select id="leadSource"><option>LinkedIn</option><option>Referral</option><option>Website</option><option>Recruiter</option><option>Other</option></select></label></div>
+          <div class="form-grid"><label>Tags<input id="recordTags" placeholder="e.g. priority, follow-up, AI/ML"></label><span></span><span></span><span></span></div>
           <div class="form-grid"><label>Skill / category<input id="skillCategory" placeholder="e.g. AI/ML"></label><label>Required skill<input id="requiredSkill" placeholder="e.g. Python"></label><label>Achievement date<input id="achievementDate" type="date"></label><label>Lead owner<input id="leadOwner" placeholder="e.g. Ishaq Jan (ID - 3325)"></label></div>
           <p class="form-subheading">Call details</p>
           <div class="form-grid"><label>Person / candidate<input id="person" required placeholder="e.g. Joe Zayd"></label><label>Call date<input id="callDate" type="date" required></label><label>Lead type<select id="leadType"><option>Interview</option><option>Client call</option><option>Networking</option><option>Follow-up</option><option>Other</option></select></label><label>Interview stage<select id="interviewStage"><option>HR Interview</option><option>Technical Interview</option><option>Hiring Manager Interview</option><option>Client Interview</option><option>Other</option></select></label></div>
@@ -69,6 +73,7 @@
       <div id="coachContent"></div>
     </section>
   </div>
+  <div class="modal-backdrop" id="privacyModal" hidden><section class="detail-modal privacy-modal" role="dialog" aria-modal="true" aria-labelledby="privacyTitle"><button class="modal-close" id="closePrivacyButton" aria-label="Close">×</button><div class="detail-kicker">DATA SHARING</div><h2 id="privacyTitle">Before AI coaching</h2><p class="detail-subtitle">When you request coaching, the selected call notes or your saved call history are sent to Google Gemini for analysis. Don’t include confidential or sensitive personal information unless you’re comfortable sharing it with Google.</p><label class="privacy-check"><input type="checkbox" id="excludeSensitiveToggle"> Exclude contact, owner, recruiter, and lead ID fields from AI analysis</label><button class="primary-button" id="privacyContinueButton">Continue to coaching</button></section></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
   <script src="app.js"></script>

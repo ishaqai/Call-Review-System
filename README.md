@@ -35,6 +35,8 @@ supabase functions deploy call-coach --project-ref zvcumwgsrgxnzmlclpem
 
 Do not commit or paste the contents of `.env`. If the Gemini key has ever been committed or shared, revoke it in Google AI Studio and create a replacement before deploying.
 
+The dashboard also includes date/source/stage filters, six-month call trends, follow-up completion, duplicate Lead ID warnings, tags, CSV export, password reset, and sign-out. Before each AI request, the portal explains that selected notes are sent to Google and offers to omit contact and ownership fields. Coaching can be focused, retried when the assistant is busy, and saved back to a call record.
+
 ## Suggested future upgrades
 
 - Add a small backend/database if records need to sync across devices.
