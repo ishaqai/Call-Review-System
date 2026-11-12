@@ -8,6 +8,8 @@ Records can include lead and company details, candidate, call type and stage, pu
 
 The dashboard includes a six-month activity chart, outcome summary, comparisons by call type, interview stage, and lead source, and a follow-up reminder list with overdue items and a mark-done action. Open any record to view its full details, its preparation checklist, and the chronological timeline of related calls.
 
+Quick Actions in the header (or **Ctrl/⌘+K**) opens a command palette for navigating sections, starting a new call or weekly recap, and finding a saved call by person or company. Press `/` outside a text field to focus call search.
+
 Call templates for HR interviews, technical interviews, client calls, and follow-ups fill in starter call details and checklist items. Checklist items can be edited before saving and checked off from the call detail view.
 
 ## AI workspace
