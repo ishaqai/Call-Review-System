@@ -1,0 +1,2 @@
+[functions.call-coach]
+verify_jwt = true

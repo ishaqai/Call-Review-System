@@ -22,6 +22,19 @@ Use **Export JSON** regularly to create a backup. The exported file can be resto
 
 The table has row-level security enabled. Each authenticated user can access only rows whose `user_id` matches their account. Never add a database password, secret key, or service-role key to this repository.
 
+## AI call coaching setup
+
+The browser invokes `supabase/functions/call-coach/index.ts`. The function reads the signed-in user's records through their authenticated Supabase session and sends only those saved notes to Gemini. The Gemini key must stay in Supabase Edge Function secrets; a local `.env` file is not automatically available to a deployed function. `.env` is ignored by Git.
+
+To deploy, install and sign in to the Supabase CLI, then run from this directory. This reads the ignored `.env` value and sends it to Supabase without printing it:
+
+```sh
+supabase secrets set --env-file .env --project-ref zvcumwgsrgxnzmlclpem
+supabase functions deploy call-coach --project-ref zvcumwgsrgxnzmlclpem
+```
+
+Do not commit or paste the contents of `.env`. If the Gemini key has ever been committed or shared, revoke it in Google AI Studio and create a replacement before deploying.
+
 ## Suggested future upgrades
 
 - Add a small backend/database if records need to sync across devices.
