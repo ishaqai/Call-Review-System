@@ -1,3 +1,7 @@
+if (window.callReviewAppLoaded) {
+  console.warn('Call Review app script was included more than once; ignoring duplicate load.');
+} else {
+window.callReviewAppLoaded = true;
 const KEY = 'call-review-records-v1';
 let records = loadRecords();
 let selectedRating = 0;
@@ -62,3 +66,4 @@ $('importInput').addEventListener('change',async event=>{const file=event.target
 $('clearAllButton').addEventListener('click',async()=>{if(records.length && confirm('Delete all call records? This cannot be undone unless you exported a backup.')){const ids=records.map(r=>r.id);records=[];persist();if(currentUser){const {error}=await supabase.from('call_records').delete().eq('user_id',currentUser.id).in('id',ids);if(error)setCloudStatus('Cloud deletion failed','error')}}});
 $('authForm').addEventListener('submit',async event=>{event.preventDefault();if(!supabase){showAuthMessage('Supabase did not load. Refresh and try again.');return}showAuthMessage('Signing in…');const {error}=await supabase.auth.signInWithPassword({email:$('authEmail').value.trim(),password:$('authPassword').value});showAuthMessage(error?.message||'Signed in')});
 resetForm();render();initCloud();
+}
