@@ -8,29 +8,33 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="details.css">
   <link rel="stylesheet" href="cloud.css">
+  <link rel="stylesheet" href="refinements.css">
+  <link rel="stylesheet" href="useful-ui.css">
 </head>
 <body>
   <div class="app-shell">
     <aside class="sidebar">
       <div class="brand"><div class="brand-mark">↗</div><div><strong>Call Review</strong><span>Personal record system</span></div></div>
       <nav><a class="active" href="#dashboard">Overview</a><a href="#records">Call records</a><a href="#new-record">New record</a></nav>
-      <div class="sidebar-note"><span class="status-dot"></span><div><strong>Private by default</strong><p>Records stay in this browser unless you export them.</p></div></div>
+      <div class="sidebar-note"><span class="status-dot"></span><div><strong>Private to your account</strong><p>Your call history and follow-ups, all in one place.</p></div></div>
     </aside>
 
     <main class="main-content">
-      <header class="topbar"><div><p class="eyebrow">PERSONAL WORKSPACE</p><h1>Call review dashboard</h1><p class="muted">Keep the important details from every conversation in one place.</p></div><div class="topbar-actions"><div id="cloudStatus" class="cloud-status">Checking cloud connection…</div><button class="primary-button" id="newRecordButton">＋ New call record</button></div></header>
-      <section class="auth-card" id="authCard"><div><strong>Sign in to sync your records</strong><p>Cloud records are private to your account. Your current browser records can be imported after signing in.</p></div><form id="authForm"><input type="email" id="authEmail" autocomplete="email" required placeholder="Email address"><input type="password" id="authPassword" autocomplete="current-password" required placeholder="Password"><button class="secondary-button" id="signInButton" type="submit">Sign in</button></form><div class="auth-message" id="authMessage"></div></section>
+      <header class="topbar"><div><p class="eyebrow">YOUR CALL WORKSPACE</p><h1>Conversations, clearly reviewed.</h1><p class="muted">Track outcomes, capture feedback, and stay on top of every next step.</p></div><div class="topbar-actions"><div class="sync-indicator"><span class="sync-light"></span><span id="cloudStatus" class="cloud-status">Checking cloud connection…</span></div><button class="primary-button" id="newRecordButton">＋ Add a call</button></div></header>
+      <section class="auth-card" id="authCard"><div class="auth-copy"><span class="auth-icon">↗</span><div><strong>Sign in to your workspace</strong><p>Access and sync your private call records across devices.</p></div></div><form id="authForm"><input type="email" id="authEmail" autocomplete="email" required placeholder="Email address"><input type="password" id="authPassword" autocomplete="current-password" required placeholder="Password"><button class="secondary-button" id="signInButton" type="submit">Sign in</button><span class="auth-message" id="authMessage" role="status" aria-live="polite"></span></form></section>
 
       <section id="dashboard" class="stats-grid" aria-label="Summary">
-        <article class="stat-card"><span class="stat-label">Total calls</span><strong id="totalCalls">0</strong><span class="stat-detail">All recorded conversations</span></article>
-        <article class="stat-card"><span class="stat-label">Positive outcomes</span><strong id="positiveCalls">0</strong><span class="stat-detail">Calls marked positive</span></article>
-        <article class="stat-card"><span class="stat-label">Average rating</span><strong id="averageRating">—</strong><span class="stat-detail">Your experience score</span></article>
-        <article class="stat-card accent"><span class="stat-label">Next follow-up</span><strong id="nextFollowUp">—</strong><span class="stat-detail" id="nextFollowUpName">No upcoming follow-ups</span></article>
+        <button class="stat-card stat-button" data-quick-filter="all"><span class="stat-label">Total calls</span><strong id="totalCalls">0</strong><span class="stat-detail">View all conversations <b>↗</b></span></button>
+        <button class="stat-card stat-button" data-quick-filter="positive"><span class="stat-label">Positive outcomes</span><strong id="positiveCalls">0</strong><span class="stat-detail">View positive calls <b>↗</b></span></button>
+        <article class="stat-card"><span class="stat-label">Average rating</span><strong id="averageRating">—</strong><span class="stat-detail">Across rated conversations</span></article>
+        <button class="stat-card accent stat-button" id="followUpCard"><span class="stat-label">Next follow-up</span><strong id="nextFollowUp">—</strong><span class="stat-detail" id="nextFollowUpName">No upcoming follow-ups</span></button>
       </section>
+
+      <section class="insights-strip" aria-label="Call outcome breakdown"><div class="insights-heading"><div><p class="eyebrow">AT A GLANCE</p><h2>Outcome breakdown</h2></div><span id="periodCallCount">0 calls</span></div><div class="outcome-meter" aria-label="Outcome proportions"><span class="meter-positive" id="positiveMeter"></span><span class="meter-neutral" id="neutralMeter"></span><span class="meter-negative" id="negativeMeter"></span></div><div class="outcome-legend"><span><i class="legend-dot positive-dot"></i>Positive <b id="positiveBreakdown">0</b></span><span><i class="legend-dot neutral-dot"></i>Neutral <b id="neutralBreakdown">0</b></span><span><i class="legend-dot negative-dot"></i>Needs work <b id="negativeBreakdown">0</b></span></div></section>
 
       <section id="records" class="content-card">
         <div class="section-heading"><div><p class="eyebrow">YOUR LOG</p><h2>Recent call records</h2></div><div class="actions"><button class="secondary-button" id="exportButton">Export JSON</button><label class="secondary-button file-button">Import JSON<input type="file" id="importInput" accept="application/json"></label></div></div>
-        <div class="toolbar"><label class="search-box"><span>⌕</span><input id="searchInput" type="search" placeholder="Search people, companies, notes…"></label><select id="outcomeFilter"><option value="all">All outcomes</option><option value="positive">Positive</option><option value="neutral">Neutral</option><option value="negative">Needs work</option></select><select id="sortSelect"><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="rating">Highest rating</option></select></div>
+        <div class="toolbar"><label class="search-box"><span>⌕</span><input id="searchInput" type="search" placeholder="Search people, companies, notes…"></label><select id="outcomeFilter"><option value="all">All outcomes</option><option value="positive">Positive</option><option value="neutral">Neutral</option><option value="negative">Needs work</option></select><label class="date-filter"><span>From</span><input id="dateFrom" type="date" aria-label="Filter from date"></label><label class="date-filter"><span>To</span><input id="dateTo" type="date" aria-label="Filter to date"></label><select id="sortSelect"><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="rating">Highest rating</option></select></div>
         <div id="recordsList" class="records-list"></div>
       </section>
 
