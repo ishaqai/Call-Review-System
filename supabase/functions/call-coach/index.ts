@@ -38,9 +38,9 @@ Deno.serve(async (request) => {
   const { data: { user }, error: userError } = await userClient.auth.getUser();
   if (userError || !user) return json({ error: "Your sign-in session is invalid. Sign in again." }, 401);
 
-  let body: { mode?: string; recordId?: string; focus?: string; excludeSensitive?: boolean; notes?: string; practiceResponse?: string };
+  let body: { mode?: string; recordId?: string; rangeStart?: string; focus?: string; excludeSensitive?: boolean; notes?: string; practiceResponse?: string };
   try { body = await request.json(); } catch { return json({ error: "Invalid request body." }, 400); }
-  const supported = ["call", "history", "brief", "practice", "practice_feedback", "cleanup"];
+  const supported = ["call", "history", "weekly", "brief", "practice", "practice_feedback", "cleanup"];
   const mode = supported.includes(body.mode || "") ? body.mode! : "call";
 
   let query = userClient.from("call_records").select("id,record").eq("user_id", user.id);
@@ -55,20 +55,25 @@ Deno.serve(async (request) => {
     if (mode === "brief") {
       const target = (rows || []).find((row) => row.id === body.recordId)?.record;
       if (target) records = [target, ...(rows || []).filter((row) => row.id !== body.recordId).map((row) => row.record).filter((candidate) => candidate && rowMatchesLead(candidate, target) && (!candidate.callDate || !target.callDate || candidate.callDate < target.callDate))].slice(0, 12);
-    } else records = (rows || []).map((row) => row.record).filter(Boolean);
+    } else {
+      records = (rows || []).map((row) => row.record).filter(Boolean);
+      if (mode === "weekly") records = records.filter((record) => !body.rangeStart || (record.callDate || "") >= body.rangeStart).sort((a, b) => String(b.callDate || "").localeCompare(String(a.callDate || ""))).slice(0, 50);
+    }
   }
   if (body.excludeSensitive) records = records.map((record) => {
     const { leadId, leadOwner, assignedBy, person, ...lessSensitive } = record;
     return { ...lessSensitive, person: "[excluded]" };
   });
   if (mode === "cleanup" && !body.notes?.trim()) return json({ error: "Paste some rough notes to clean up." }, 400);
-  if (mode !== "cleanup" && !records.length) return json({ error: mode === "history" ? "Save some synced calls first to review patterns." : "That call is not available in your cloud records." }, 404);
+  if (mode !== "cleanup" && !records.length) return json({ error: mode === "history" ? "Save some synced calls first to review patterns." : mode === "weekly" ? "No calls have been saved since the start of this week." : "That call is not available in your cloud records." }, 404);
 
   const focusLabels: Record<string, string> = { overall: "overall call improvement", clarity: "clear and concise communication", confidence: "confidence and rapport", objections: "handling questions or objections", followup: "follow-up and next steps" };
   const focus = focusLabels[body.focus || "overall"] || focusLabels.overall;
   const record = records[0];
   const prompt = mode === "history"
     ? `Review these call notes and give practical coaching patterns focused on ${focus}. Only use evidence present in these records; do not invent facts or claim statistical certainty from a small sample. Return JSON with keys summary (string), strengths (string array), improvement_areas (string array), patterns (string array), next_steps (string array). Records: ${JSON.stringify(records).slice(0, 24000)}`
+    : mode === "weekly"
+    ? `Create a useful weekly call recap from these saved records since ${body.rangeStart || "the start of this week"}. Report patterns carefully; mention when the sample is small. Give a short summary, wins, recurring_challenges, one_focus_for_next_week, and suggested_actions as JSON. Records: ${JSON.stringify(records).slice(0, 24000)}`
     : mode === "brief"
     ? `Prepare a concise, practical pre-call brief using this lead and its earlier saved call notes. The first record is the selected call, followed by matching history. Clearly mark unknowns as questions and never invent facts. Return JSON with summary (string), prep_agenda (string array), context_points (string array), open_questions (string array), suggested_opening (string array). Records: ${JSON.stringify(records).slice(0, 16000)}`
     : mode === "practice"
