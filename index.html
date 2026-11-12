@@ -7,6 +7,7 @@
   <title>Call Review System</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="details.css">
+  <link rel="stylesheet" href="cloud.css">
 </head>
 <body>
   <div class="app-shell">
@@ -17,7 +18,8 @@
     </aside>
 
     <main class="main-content">
-      <header class="topbar"><div><p class="eyebrow">PERSONAL WORKSPACE</p><h1>Call review dashboard</h1><p class="muted">Keep the important details from every conversation in one place.</p></div><button class="primary-button" id="newRecordButton">＋ New call record</button></header>
+      <header class="topbar"><div><p class="eyebrow">PERSONAL WORKSPACE</p><h1>Call review dashboard</h1><p class="muted">Keep the important details from every conversation in one place.</p></div><div class="topbar-actions"><div id="cloudStatus" class="cloud-status">Checking cloud connection…</div><button class="primary-button" id="newRecordButton">＋ New call record</button></div></header>
+      <section class="auth-card" id="authCard"><div><strong>Sign in to sync your records</strong><p>Cloud records are private to your account. Your current browser records can be imported after signing in.</p></div><form id="authForm"><input type="email" id="authEmail" autocomplete="email" required placeholder="Email address"><input type="password" id="authPassword" autocomplete="current-password" required placeholder="Password"><button class="secondary-button" id="signInButton" type="submit">Sign in</button><button class="text-button" id="signUpButton" type="button">Create account</button></form><div class="auth-message" id="authMessage"></div></section>
 
       <section id="dashboard" class="stats-grid" aria-label="Summary">
         <article class="stat-card"><span class="stat-label">Total calls</span><strong id="totalCalls">0</strong><span class="stat-detail">All recorded conversations</span></article>
@@ -56,6 +58,8 @@
       <div id="detailContent"></div>
     </section>
   </div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -1,12 +1,37 @@
 const KEY = 'call-review-records-v1';
 let records = loadRecords();
 let selectedRating = 0;
+const supabase = window.supabase?.createClient(window.SUPABASE_URL, window.SUPABASE_PUBLISHABLE_KEY);
+let currentUser = null;
+let cloudReady = false;
 
 const $ = id => document.getElementById(id);
 const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
 const formatDate = value => value ? new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric',year:'numeric'}).format(new Date(`${value}T12:00:00`)) : '—';
 function loadRecords(){try{return JSON.parse(localStorage.getItem(KEY)) || []}catch{return []}}
 function persist(){localStorage.setItem(KEY, JSON.stringify(records)); render()}
+function setCloudStatus(message,state=''){const el=$('cloudStatus');el.textContent=message;el.className=`cloud-status ${state}`}
+function showAuthMessage(message){$('authMessage').textContent=message}
+async function syncCurrentRecords(){
+  if(!currentUser||!cloudReady)return;
+  setCloudStatus('Syncing records…');
+  const {data,error}=await supabase.from('call_records').select('id,record').eq('user_id',currentUser.id);
+  if(error){setCloudStatus('Cloud database setup needed','error');console.error(error);return}
+  const cloudRows=data||[], cloudIds=new Set(cloudRows.map(row=>row.id));
+  const localOnly=records.filter(record=>!cloudIds.has(record.id));
+  if(localOnly.length){const {error:uploadError}=await supabase.from('call_records').upsert(localOnly.map(record=>({id:record.id,user_id:currentUser.id,record})),{onConflict:'id'});if(uploadError){setCloudStatus('Could not upload local records','error');console.error(uploadError);return}}
+  const {data:latest,error:loadError}=await supabase.from('call_records').select('id,record').eq('user_id',currentUser.id);
+  if(loadError){setCloudStatus('Could not load cloud records','error');console.error(loadError);return}
+  records=(latest||[]).map(row=>row.record);persist();setCloudStatus(`Synced to cloud · ${records.length} records`,'online');
+}
+async function initCloud(){
+  if(!supabase){setCloudStatus('Cloud library unavailable','error');return}
+  $('authCard').hidden=false;
+  const {data:{session},error}=await supabase.auth.getSession();
+  if(error){setCloudStatus('Could not check sign-in','error');return}
+  if(session){currentUser=session.user;cloudReady=true;$('authCard').hidden=true;await syncCurrentRecords()}else setCloudStatus('Sign in to enable cloud sync');
+  supabase.auth.onAuthStateChange((_event,nextSession)=>{setTimeout(async()=>{currentUser=nextSession?.user||null;cloudReady=Boolean(currentUser);$('authCard').hidden=Boolean(currentUser);if(currentUser)await syncCurrentRecords();else{setCloudStatus('Signed out · showing this browser’s records');records=loadRecords();render()}},0)});
+}
 function render(){
   const query = $('searchInput').value.toLowerCase().trim(), filter = $('outcomeFilter').value, sort = $('sortSelect').value;
   let visible = records.filter(r => filter === 'all' || r.outcome === filter).filter(r => !query || [r.person,r.company,r.jobTitle,r.leadId,r.leadSource,r.skillCategory,r.requiredSkill,r.leadOwner,r.leadType,r.interviewStage,r.callPurpose,r.assignedBy,r.conclusion,r.feedback].join(' ').toLowerCase().includes(query));
@@ -24,15 +49,17 @@ function openDetails(id){const r=records.find(item=>item.id===id);if(!r)return;c
 function resetForm(){ $('recordForm').reset(); $('recordId').value=''; $('callDate').value = new Date().toISOString().slice(0,10); selectedRating=0; updateStars(); $('formTitle').textContent='Add a call record'; $('saveButton').textContent='Save call record'; $('saveMessage').textContent=''; }
 function updateStars(){document.querySelectorAll('#ratingInput button').forEach(button => button.classList.toggle('selected', Number(button.dataset.rating) <= selectedRating))}
 function editRecord(id){const r=records.find(item=>item.id===id); if(!r)return; $('recordId').value=r.id; $('leadId').value=r.leadId||''; $('company').value=r.company||''; $('jobTitle').value=r.jobTitle||''; $('leadSource').value=r.leadSource||'LinkedIn'; $('skillCategory').value=r.skillCategory||''; $('requiredSkill').value=r.requiredSkill||''; $('achievementDate').value=r.achievementDate||''; $('leadOwner').value=r.leadOwner||''; $('person').value=r.person||''; $('callDate').value=r.callDate||''; $('leadType').value=r.leadType||'Interview'; $('interviewStage').value=r.interviewStage||'HR Interview'; $('callPurpose').value=r.callPurpose||''; $('assignedBy').value=r.assignedBy||''; $('outcome').value=r.outcome; $('followUp').value=r.followUp || ''; $('conclusion').value=r.conclusion || ''; $('feedback').value=r.feedback || ''; selectedRating=Number(r.rating)||0; updateStars(); $('formTitle').textContent='Edit call record'; $('saveButton').textContent='Update record'; location.hash='new-record'; window.scrollTo({top:document.getElementById('new-record').offsetTop-20,behavior:'smooth'})}
-document.addEventListener('click', event => {const edit=event.target.closest('[data-edit]'), del=event.target.closest('[data-delete]'), view=event.target.closest('[data-view]'); if(edit){event.stopPropagation();editRecord(edit.dataset.edit)} if(del){event.stopPropagation();if(confirm('Delete this call record?')){records=records.filter(r=>r.id!==del.dataset.delete);persist()}} if(view && !edit && !del)openDetails(view.dataset.view)});
+document.addEventListener('click', async event => {const edit=event.target.closest('[data-edit]'), del=event.target.closest('[data-delete]'), view=event.target.closest('[data-view]'); if(edit){event.stopPropagation();editRecord(edit.dataset.edit)} if(del){event.stopPropagation();if(confirm('Delete this call record?')){const id=del.dataset.delete;records=records.filter(r=>r.id!==id);persist();if(currentUser){const {error}=await supabase.from('call_records').delete().eq('id',id).eq('user_id',currentUser.id);if(error)setCloudStatus('Local delete saved; cloud delete failed','error')}}} if(view && !edit && !del)openDetails(view.dataset.view)});
 document.addEventListener('keydown', event => {const view=event.target.closest('[data-view]');if(view && (event.key==='Enter'||event.key===' ')){event.preventDefault();openDetails(view.dataset.view)}if(event.key==='Escape')closeDetails()});
 function closeDetails(){$('recordModal').hidden=true;document.body.classList.remove('modal-open')}
 $('closeModalButton').addEventListener('click',closeDetails);$('recordModal').addEventListener('click',event=>{if(event.target.id==='recordModal')closeDetails()});
-$('recordForm').addEventListener('submit', event => {event.preventDefault(); const id=$('recordId').value || crypto.randomUUID(); const record={id,leadId:$('leadId').value.trim(),company:$('company').value.trim(),jobTitle:$('jobTitle').value.trim(),leadSource:$('leadSource').value,skillCategory:$('skillCategory').value.trim(),requiredSkill:$('requiredSkill').value.trim(),achievementDate:$('achievementDate').value,leadOwner:$('leadOwner').value.trim(),person:$('person').value.trim(),callDate:$('callDate').value,leadType:$('leadType').value,interviewStage:$('interviewStage').value,callPurpose:$('callPurpose').value.trim(),assignedBy:$('assignedBy').value.trim(),outcome:$('outcome').value,rating:selectedRating,followUp:$('followUp').value,conclusion:$('conclusion').value.trim(),feedback:$('feedback').value.trim()}; const index=records.findIndex(r=>r.id===id); index >= 0 ? records[index]=record : records.push(record); persist(); $('saveMessage').textContent='Saved locally'; setTimeout(()=>resetForm(),900);});
+$('recordForm').addEventListener('submit', async event => {event.preventDefault(); const id=$('recordId').value || crypto.randomUUID(); const record={id,leadId:$('leadId').value.trim(),company:$('company').value.trim(),jobTitle:$('jobTitle').value.trim(),leadSource:$('leadSource').value,skillCategory:$('skillCategory').value.trim(),requiredSkill:$('requiredSkill').value.trim(),achievementDate:$('achievementDate').value,leadOwner:$('leadOwner').value.trim(),person:$('person').value.trim(),callDate:$('callDate').value,leadType:$('leadType').value,interviewStage:$('interviewStage').value,callPurpose:$('callPurpose').value.trim(),assignedBy:$('assignedBy').value.trim(),outcome:$('outcome').value,rating:selectedRating,followUp:$('followUp').value,conclusion:$('conclusion').value.trim(),feedback:$('feedback').value.trim()}; const index=records.findIndex(r=>r.id===id); index >= 0 ? records[index]=record : records.push(record); persist(); $('saveMessage').textContent='Saved on this device'; if(currentUser){const {error}=await supabase.from('call_records').upsert({id,user_id:currentUser.id,record},{onConflict:'id'});if(error){$('saveMessage').textContent='Saved locally; cloud sync failed';setCloudStatus('Cloud save failed','error');console.error(error)}else{$('saveMessage').textContent='Saved and synced to cloud';setCloudStatus('Cloud sync is up to date','online')}} setTimeout(()=>resetForm(),1300);});
 document.querySelectorAll('#ratingInput button').forEach(button=>button.addEventListener('click',()=>{selectedRating=Number(button.dataset.rating);updateStars()}));
 ['searchInput','outcomeFilter','sortSelect'].forEach(id=>$(id).addEventListener('input',render));
 $('newRecordButton').addEventListener('click',()=>{resetForm();location.hash='new-record';$('person').focus()}); $('clearFormButton').addEventListener('click',resetForm);
 $('exportButton').addEventListener('click',()=>{const blob=new Blob([JSON.stringify(records,null,2)],{type:'application/json'}), url=URL.createObjectURL(blob), link=document.createElement('a'); link.href=url;link.download=`call-records-${new Date().toISOString().slice(0,10)}.json`;link.click();URL.revokeObjectURL(url)});
-$('importInput').addEventListener('change',async event=>{const file=event.target.files[0];if(!file)return;try{const incoming=JSON.parse(await file.text());if(!Array.isArray(incoming))throw Error();records=incoming.map(r=>({...r,id:r.id||crypto.randomUUID()}));persist();alert(`Imported ${records.length} records.`)}catch{alert('That file is not a valid call-record export.')}event.target.value=''});
-$('clearAllButton').addEventListener('click',()=>{if(records.length && confirm('Delete all call records? This cannot be undone unless you exported a backup.')){records=[];persist()}});
-resetForm();render();
+$('importInput').addEventListener('change',async event=>{const file=event.target.files[0];if(!file)return;try{const incoming=JSON.parse(await file.text());if(!Array.isArray(incoming))throw Error();const existing=new Map(records.map(r=>[r.id,r]));for(const item of incoming){const record={...item,id:item.id||crypto.randomUUID()};existing.set(record.id,record)}records=[...existing.values()];persist();if(currentUser)await syncCurrentRecords();alert(`Imported ${incoming.length} records.`)}catch{alert('That file is not a valid call-record export.')}event.target.value=''});
+$('clearAllButton').addEventListener('click',async()=>{if(records.length && confirm('Delete all call records? This cannot be undone unless you exported a backup.')){const ids=records.map(r=>r.id);records=[];persist();if(currentUser){const {error}=await supabase.from('call_records').delete().eq('user_id',currentUser.id).in('id',ids);if(error)setCloudStatus('Cloud deletion failed','error')}}});
+$('authForm').addEventListener('submit',async event=>{event.preventDefault();showAuthMessage('Signing in…');const {error}=await supabase.auth.signInWithPassword({email:$('authEmail').value.trim(),password:$('authPassword').value});showAuthMessage(error?.message||'Signed in')});
+$('signUpButton').addEventListener('click',async()=>{showAuthMessage('Creating account…');const {data,error}=await supabase.auth.signUp({email:$('authEmail').value.trim(),password:$('authPassword').value});showAuthMessage(error?.message||(data.session?'Account created. Signing in…':'Account created. Check your email to confirm, then sign in.'))});
+resetForm();render();initCloud();
