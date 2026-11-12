@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0d1b2a">
+  <title>Call Review System</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="details.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-mark">↗</div><div><strong>Call Review</strong><span>Personal record system</span></div></div>
+      <nav><a class="active" href="#dashboard">Overview</a><a href="#records">Call records</a><a href="#new-record">New record</a></nav>
+      <div class="sidebar-note"><span class="status-dot"></span><div><strong>Private by default</strong><p>Records stay in this browser unless you export them.</p></div></div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar"><div><p class="eyebrow">PERSONAL WORKSPACE</p><h1>Call review dashboard</h1><p class="muted">Keep the important details from every conversation in one place.</p></div><button class="primary-button" id="newRecordButton">＋ New call record</button></header>
+
+      <section id="dashboard" class="stats-grid" aria-label="Summary">
+        <article class="stat-card"><span class="stat-label">Total calls</span><strong id="totalCalls">0</strong><span class="stat-detail">All recorded conversations</span></article>
+        <article class="stat-card"><span class="stat-label">Positive outcomes</span><strong id="positiveCalls">0</strong><span class="stat-detail">Calls marked positive</span></article>
+        <article class="stat-card"><span class="stat-label">Average rating</span><strong id="averageRating">—</strong><span class="stat-detail">Your experience score</span></article>
+        <article class="stat-card accent"><span class="stat-label">Next follow-up</span><strong id="nextFollowUp">—</strong><span class="stat-detail" id="nextFollowUpName">No upcoming follow-ups</span></article>
+      </section>
+
+      <section id="records" class="content-card">
+        <div class="section-heading"><div><p class="eyebrow">YOUR LOG</p><h2>Recent call records</h2></div><div class="actions"><button class="secondary-button" id="exportButton">Export JSON</button><label class="secondary-button file-button">Import JSON<input type="file" id="importInput" accept="application/json"></label></div></div>
+        <div class="toolbar"><label class="search-box"><span>⌕</span><input id="searchInput" type="search" placeholder="Search people, companies, notes…"></label><select id="outcomeFilter"><option value="all">All outcomes</option><option value="positive">Positive</option><option value="neutral">Neutral</option><option value="negative">Needs work</option></select><select id="sortSelect"><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="rating">Highest rating</option></select></div>
+        <div id="recordsList" class="records-list"></div>
+      </section>
+
+      <section id="new-record" class="content-card form-card">
+        <div class="section-heading"><div><p class="eyebrow">CAPTURE THE DETAILS</p><h2 id="formTitle">Add a call record</h2></div><button class="text-button" id="clearFormButton">Clear form</button></div>
+        <form id="recordForm">
+          <input type="hidden" id="recordId">
+          <p class="form-subheading">Lead details</p>
+          <div class="form-grid"><label>Lead ID<input id="leadId" placeholder="e.g. 430770"></label><label>Company name<input id="company" placeholder="e.g. Aster Ocean"></label><label>Job title<input id="jobTitle" placeholder="e.g. Data Architect"></label><label>Lead source<select id="leadSource"><option>LinkedIn</option><option>Referral</option><option>Website</option><option>Recruiter</option><option>Other</option></select></label></div>
+          <div class="form-grid"><label>Skill / category<input id="skillCategory" placeholder="e.g. AI/ML"></label><label>Required skill<input id="requiredSkill" placeholder="e.g. Python"></label><label>Achievement date<input id="achievementDate" type="date"></label><label>Lead owner<input id="leadOwner" placeholder="e.g. Ishaq Jan (ID - 3325)"></label></div>
+          <p class="form-subheading">Call details</p>
+          <div class="form-grid"><label>Person / candidate<input id="person" required placeholder="e.g. Joe Zayd"></label><label>Call date<input id="callDate" type="date" required></label><label>Lead type<select id="leadType"><option>Interview</option><option>Client call</option><option>Networking</option><option>Follow-up</option><option>Other</option></select></label><label>Interview stage<select id="interviewStage"><option>HR Interview</option><option>Technical Interview</option><option>Hiring Manager Interview</option><option>Client Interview</option><option>Other</option></select></label></div>
+          <div class="form-grid"><label>Call purpose<input id="callPurpose" placeholder="e.g. Introductory HR Interview"></label><label>Assigned by / recruiter<input id="assignedBy" placeholder="e.g. Muhammad Bilal (ID - 2157)"></label><label>How did it go?<select id="outcome"><option value="positive">Positive</option><option value="neutral">Neutral</option><option value="negative">Needs work</option></select></label><label>Next follow-up<input id="followUp" type="date"></label></div>
+          <div class="form-grid"><label>Experience rating<div class="rating-input" id="ratingInput" aria-label="Experience rating"><button type="button" data-rating="1">★</button><button type="button" data-rating="2">★</button><button type="button" data-rating="3">★</button><button type="button" data-rating="4">★</button><button type="button" data-rating="5">★</button></div></label></div>
+          <div class="form-grid two"><label>Conclusion<textarea id="conclusion" rows="4" placeholder="What was the main takeaway?"></textarea></label><label>Feedback / notes<textarea id="feedback" rows="4" placeholder="What went well? What would you change next time?"></textarea></label></div>
+          <div class="form-footer"><span id="saveMessage" class="save-message"></span><button class="primary-button" type="submit" id="saveButton">Save call record</button></div>
+        </form>
+      </section>
+      <footer>Call Review System · Local workspace · <button class="text-button" id="clearAllButton">Clear all records</button></footer>
+    </main>
+  </div>
+  <div class="modal-backdrop" id="recordModal" hidden>
+    <section class="detail-modal" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+      <button class="modal-close" id="closeModalButton" aria-label="Close details">×</button>
+      <div id="detailContent"></div>
+    </section>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
