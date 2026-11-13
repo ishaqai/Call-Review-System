@@ -10,6 +10,8 @@ The dashboard includes a six-month activity chart, outcome summary, comparisons 
 
 Quick Actions in the header (or **Ctrl/⌘+K**) opens a command palette for navigating sections, starting a new call or weekly recap, and finding a saved call by person or company. Press `/` outside a text field to focus call search.
 
+Use the header theme toggle to switch between light and dark appearance. The selection is saved in the current browser.
+
 Call templates for HR interviews, technical interviews, client calls, and follow-ups fill in starter call details and checklist items. Checklist items can be edited before saving and checked off from the call detail view.
 
 ## AI workspace

@@ -16,6 +16,8 @@ const pageSize = 10;
 const $ = id => document.getElementById(id);
 const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
 const formatDate = value => value ? new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric',year:'numeric'}).format(new Date(`${value}T12:00:00`)) : '—';
+function applyTheme(theme,persistChoice=true){const dark=theme==='dark';document.body.classList.toggle('dark-theme',dark);const toggle=$('themeToggle');if(toggle){toggle.setAttribute('aria-pressed',String(dark));toggle.querySelector('[aria-hidden="true"]').textContent=dark?'☀':'☾';$('themeToggleLabel').textContent=dark?'Light mode':'Dark mode'}document.querySelector('meta[name="theme-color"]')?.setAttribute('content',dark?'#111827':'#0d1b2a');if(persistChoice)localStorage.setItem('call-review-theme',dark?'dark':'light')}
+applyTheme(localStorage.getItem('call-review-theme')||'light',false);
 function loadRecords(){try{return JSON.parse(localStorage.getItem(KEY)) || []}catch{return []}}
 function persist(){localStorage.setItem(KEY, JSON.stringify(records)); render()}
 function setCloudStatus(message,state=''){const el=$('cloudStatus');el.textContent=message;el.className=`cloud-status ${state}`}
@@ -99,6 +101,7 @@ $('[data-quick-filter="all"]')?.addEventListener('click',()=>{ $('outcomeFilter'
 $('[data-quick-filter="positive"]')?.addEventListener('click',()=>{$('outcomeFilter').value='positive';$('dateFrom').value='';$('dateTo').value='';$('searchInput').value='';render();$('records')?.scrollIntoView({behavior:'smooth'})});
 $('followUpCard')?.addEventListener('click',()=>{const next=records.filter(r=>r.followUp&&r.followUp>=new Date().toISOString().slice(0,10)).sort((a,b)=>a.followUp.localeCompare(b.followUp))[0];if(next)openDetails(next.id);else{$('followUp')?.focus();$('new-record')?.scrollIntoView({behavior:'smooth'})}});
 $('newRecordButton')?.addEventListener('click',()=>{resetForm();location.hash='new-record';$('person')?.focus()}); $('clearFormButton')?.addEventListener('click',resetForm);
+$('themeToggle')?.addEventListener('click',()=>applyTheme(document.body.classList.contains('dark-theme')?'light':'dark'));
 $('openCommandPalette')?.addEventListener('click',openCommandPalette);
 function openCommandPalette(){$('commandPalette').hidden=false;document.body.classList.add('modal-open');$('commandInput').value='';renderCommandPalette('');$('commandInput').focus()}
 function closeCommandPalette(){$('commandPalette').hidden=true;if($('recordModal').hidden&&$('coachModal').hidden&&$('privacyModal').hidden)document.body.classList.remove('modal-open')}
