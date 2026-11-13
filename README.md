@@ -6,7 +6,9 @@ A personal workspace for logging calls, tracking lead outcomes, preparing follow
 
 Records can include lead and company details, candidate, call type and stage, purpose, outcome, rating, conclusion, feedback, tags, and follow-up date. Records support search and filters by date, stage, source, and outcome. Export/import JSON for backups, or export CSV for analysis.
 
-The dashboard includes a six-month activity chart, outcome summary, comparisons by call type, interview stage, and lead source, and a follow-up reminder list with overdue items and a mark-done action. Open any record to view its full details, its preparation checklist, and the chronological timeline of related calls.
+The dashboard includes a six-month activity chart, outcome summary, comparisons by call type, interview stage, and lead source, and a follow-up reminder list with overdue items and a mark-done action. Export open follow-ups as an `.ics` calendar file for Google Calendar, Outlook, or another calendar app. Open any record to view its full details, preparation checklist, and chronological timeline of related calls.
+
+The lead pipeline groups calls by lead and tracks each lead through New, Contacted, Interviewing, Offer, and Closed. Change a lead’s status on the board or in its call form. Duplicate review flags leads with the same person and company; merging groups their histories while preserving the individual calls and original Lead IDs. AI progress summarizes strengths and improvement themes from coaching reviews saved to records.
 
 Quick Actions in the header (or **Ctrl/⌘+K**) opens a command palette for navigating sections, starting a new call or weekly recap, and finding a saved call by person or company. Press `/` outside a text field to focus call search.
 
