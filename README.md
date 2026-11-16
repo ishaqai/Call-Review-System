@@ -26,11 +26,17 @@ The AI workspace provides:
 - Rough-note cleanup that creates a draft for review before applying it to the call form.
 - Weekly recaps of saved calls from the current week.
 
-AI requests require sign-in and use the Supabase Edge Function at `supabase/functions/call-coach/index.ts`, which calls Anthropic's Claude Haiku 4.5 API. Before submitting a request, the app explains what information may be sent to Anthropic. For saved call analysis, you can omit contact, owner, recruiter, and lead ID fields. Review AI output before using it.
+When opened on `localhost` or from a local file, AI requests use Ollama's `qwen2.5:3b` model at `http://127.0.0.1:11434`; they do not require sign-in. On the hosted site, requests continue through the Supabase Edge Function at `supabase/functions/call-coach/index.ts` and Anthropic's Claude Haiku 4.5 API. The app explains which provider will receive the request before sending it. For saved call analysis, you can omit contact, owner, recruiter, and lead ID fields. Review AI output before using it. If signed in, normal Supabase record syncing still applies, including when you save coaching results.
 
 ## Local use and cloud sync
 
-Open `index.html` in a browser for local use. Local records are stored in that browser. Sign in to sync records to Supabase and access them across devices. Local data is not automatically shared across browsers unless you sign in and sync it.
+For local Qwen use, make sure Ollama is running and `qwen2.5:3b` is installed, then serve this folder and open it from localhost:
+
+```sh
+python3 -m http.server 8000
+```
+
+Visit `http://localhost:8000`. Local records are stored in that browser. Sign in to sync records to Supabase and access them across devices. Local data is not automatically shared across browsers unless you sign in and sync it.
 
 Use **Export JSON** regularly to create a backup. Restore it with **Import JSON**.
 
